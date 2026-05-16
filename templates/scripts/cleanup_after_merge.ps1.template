@@ -1,0 +1,233 @@
+# Conservative post-merge cleanup helper.
+#
+# Replace <DEFAULT_BRANCH> before use.
+# This script is intentionally cautious:
+# - verifies merged PR state when -PrNumber is supplied
+# - removes only clean worktrees under .worktrees
+# - tries git branch -d only, never git branch -D
+# - treats squash-merge local-branch rejection as a warning, not a failure
+
+[CmdletBinding()]
+param(
+    [Parameter(Mandatory = $true)]
+    [string]$Branch,
+
+    [int]$PrNumber = 0,
+
+    [string]$DefaultBranch = "<DEFAULT_BRANCH>",
+
+    [string]$WorktreePath = "",
+
+    [switch]$DeleteRemote,
+
+    [switch]$Apply
+)
+
+$ErrorActionPreference = "Stop"
+
+if ($DefaultBranch -match "^<.*>$") {
+    throw "Replace <DEFAULT_BRANCH> in this script or pass -DefaultBranch."
+}
+
+function Invoke-Git {
+    param([string[]]$GitArgs, [switch]$AllowFailure)
+
+    $errFile = New-TemporaryFile
+    try {
+        $output = & git @GitArgs 2> $errFile
+        $code = $LASTEXITCODE
+        $stderr = Get-Content -LiteralPath $errFile -Raw -ErrorAction SilentlyContinue
+
+        if ($code -ne 0 -and -not $AllowFailure) {
+            $detail = (($output -join "`n"), $stderr | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }) -join "`n"
+            throw "git $($GitArgs -join ' ') failed: $detail"
+        }
+
+        return @{
+            Code = $code
+            Output = ($output -join "`n")
+            Error = $stderr
+        }
+    }
+    finally {
+        Remove-Item -LiteralPath $errFile -Force -ErrorAction SilentlyContinue
+    }
+}
+
+function Get-RepoRoot {
+    $result = Invoke-Git -GitArgs @("rev-parse", "--show-toplevel")
+    return $result.Output.Trim()
+}
+
+function Assert-SafeBranch {
+    param([string]$Name, [string]$Default)
+
+    if ([string]::IsNullOrWhiteSpace($Name)) {
+        throw "Branch is required."
+    }
+
+    $protected = @($Default, "main", "master", "HEAD")
+    if ($protected -contains $Name) {
+        throw "Refusing to clean protected branch '$Name'."
+    }
+
+    $current = (Invoke-Git -GitArgs @("branch", "--show-current")).Output.Trim()
+    if ($Name -eq $current) {
+        throw "Refusing to clean the currently checked-out branch '$Name'."
+    }
+}
+
+function Assert-MergedPr {
+    param([int]$Number, [string]$ExpectedBranch, [string]$Default)
+
+    if ($Number -le 0) { return }
+    if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
+        throw "gh CLI is required when -PrNumber is supplied."
+    }
+
+    $json = & gh pr view $Number --json state,headRefName,mergeCommit 2>$null
+    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($json)) {
+        throw "Could not read PR #$Number."
+    }
+
+    $pr = $json | ConvertFrom-Json
+    if ($pr.state -ne "MERGED") {
+        throw "PR #$Number is '$($pr.state)', not MERGED."
+    }
+    if ($pr.headRefName -ne $ExpectedBranch) {
+        throw "PR #$Number head branch '$($pr.headRefName)' does not match '$ExpectedBranch'."
+    }
+    if ($null -eq $pr.mergeCommit -or [string]::IsNullOrWhiteSpace($pr.mergeCommit.oid)) {
+        throw "PR #$Number has no merge commit oid."
+    }
+
+    Invoke-Git -GitArgs @("fetch", "origin", $Default, "--prune") | Out-Null
+    $ancestor = Invoke-Git -GitArgs @("merge-base", "--is-ancestor", $pr.mergeCommit.oid, "origin/$Default") -AllowFailure
+    if ($ancestor.Code -ne 0) {
+        throw "PR #$Number merge commit '$($pr.mergeCommit.oid)' is not present in origin/$Default."
+    }
+}
+
+function Get-DefaultWorktreePath {
+    param([string]$RepoRoot, [string]$Name)
+
+    $leaf = ($Name -split "[/\\]")[-1]
+    return Join-Path (Join-Path $RepoRoot ".worktrees") $leaf
+}
+
+function Assert-SafeWorktree {
+    param([string]$RepoRoot, [string]$Path, [switch]$ReportOnly)
+
+    if ([string]::IsNullOrWhiteSpace($Path)) {
+        throw "Worktree path is empty."
+    }
+
+    if (-not (Test-Path -LiteralPath $Path)) {
+        return $false
+    }
+
+    $rootFull = [System.IO.Path]::GetFullPath($RepoRoot).TrimEnd("\", "/")
+    $allowedFull = [System.IO.Path]::GetFullPath((Join-Path $RepoRoot ".worktrees")).TrimEnd("\", "/")
+    $allowedPrefix = $allowedFull + [System.IO.Path]::DirectorySeparatorChar
+    $pathFull = [System.IO.Path]::GetFullPath($Path).TrimEnd("\", "/")
+
+    if ($pathFull -eq $rootFull) {
+        throw "Refusing to remove the root checkout."
+    }
+    if (-not $pathFull.StartsWith($allowedPrefix, [System.StringComparison]::OrdinalIgnoreCase)) {
+        throw "Refusing to remove worktree outside .worktrees: $Path"
+    }
+
+    $dirty = & git -C $Path status --porcelain 2>$null
+    if ($LASTEXITCODE -ne 0) {
+        throw "Could not inspect worktree status: $Path"
+    }
+    if (-not [string]::IsNullOrWhiteSpace(($dirty -join "`n"))) {
+        $message = "Refusing to remove dirty worktree: $Path"
+        if ($ReportOnly) {
+            Write-Warning $message
+            return $false
+        }
+        throw $message
+    }
+
+    foreach ($marker in @(".codex-active", ".claude-active", ".worktree-active", ".cleanup-lock")) {
+        if (Test-Path -LiteralPath (Join-Path $Path $marker)) {
+            $message = "Refusing to remove worktree with active marker '$marker': $Path"
+            if ($ReportOnly) {
+                Write-Warning $message
+                return $false
+            }
+            throw $message
+        }
+    }
+
+    return $true
+}
+
+$repoRoot = Get-RepoRoot
+Assert-SafeBranch -Name $Branch -Default $DefaultBranch
+Assert-MergedPr -Number $PrNumber -ExpectedBranch $Branch -Default $DefaultBranch
+
+if ([string]::IsNullOrWhiteSpace($WorktreePath)) {
+    $WorktreePath = Get-DefaultWorktreePath -RepoRoot $repoRoot -Name $Branch
+}
+
+Write-Output "Cleanup target:"
+Write-Output "  Repo: $repoRoot"
+Write-Output "  Branch: $Branch"
+Write-Output "  Worktree: $WorktreePath"
+Write-Output "  Default branch: $DefaultBranch"
+Write-Output "  Apply: $Apply"
+
+$canRemoveWorktree = Assert-SafeWorktree -RepoRoot $repoRoot -Path $WorktreePath -ReportOnly:(-not $Apply)
+
+if (-not $Apply) {
+    if ($DeleteRemote) {
+        Write-Output "Would delete remote branch origin/$Branch if it exists."
+    } else {
+        Write-Output "Would leave remote branch origin/$Branch untouched."
+    }
+
+    if ($canRemoveWorktree) {
+        Write-Output "Would remove clean worktree $WorktreePath."
+    } else {
+        Write-Output "Would not remove worktree $WorktreePath."
+    }
+
+    Write-Output "Would attempt safe local branch deletion with: git branch -d $Branch"
+    Write-Output "Would fetch origin/$DefaultBranch and fast-forward pull only if currently on $DefaultBranch."
+    Write-Output "Dry run only. Re-run with -Apply to remove eligible resources."
+    exit 0
+}
+
+if ($DeleteRemote) {
+    $remote = Invoke-Git -GitArgs @("ls-remote", "--heads", "origin", $Branch) -AllowFailure
+    if ($remote.Code -eq 0 -and -not [string]::IsNullOrWhiteSpace($remote.Output)) {
+        Invoke-Git -GitArgs @("push", "origin", "--delete", $Branch) | Out-Null
+        Write-Output "Deleted remote branch origin/$Branch."
+    } else {
+        Write-Output "Remote branch origin/$Branch not found; skipping remote delete."
+    }
+}
+
+if ($canRemoveWorktree) {
+    Invoke-Git -GitArgs @("worktree", "remove", $WorktreePath) | Out-Null
+    Write-Output "Removed worktree $WorktreePath."
+}
+
+$deleteLocal = Invoke-Git -GitArgs @("branch", "-d", $Branch) -AllowFailure
+if ($deleteLocal.Code -eq 0) {
+    Write-Output "Deleted local branch $Branch."
+} else {
+    Write-Warning "Kept local branch '$Branch'. This can happen after squash merge. The script will not use git branch -D automatically."
+}
+
+Invoke-Git -GitArgs @("fetch", "origin", $DefaultBranch, "--prune") | Out-Null
+$current = (Invoke-Git -GitArgs @("branch", "--show-current")).Output.Trim()
+if ($current -eq $DefaultBranch) {
+    Invoke-Git -GitArgs @("pull", "--ff-only") | Out-Null
+    Write-Output "Synced $DefaultBranch with origin/$DefaultBranch."
+} else {
+    Write-Output "Current branch is '$current'; skipped default-branch pull."
+}

@@ -1,0 +1,16 @@
+# <PROJECT_NAME> Version History
+
+Private operational history for projects that use notes/control files.
+
+Public repos usually use `CHANGELOG.md`, Git tags, and GitHub Releases. Use this file when a project also needs deploy proof, exact SHAs, smoke checks, rollback notes, or operational context that does not belong in the public changelog.
+
+Newest entries go at the top.
+
+## <VERSION> — YYYY-MM-DD — <one-line summary>
+
+- PR: #<num-or-none>
+- SHA: <full-sha>
+- Deployed/Released: <environment-or-release-channel>
+- Verification: <command-or-smoke-test-result>
+- Rollback: <rollback-sha-or-plan>
+- Notes: <short operational detail>

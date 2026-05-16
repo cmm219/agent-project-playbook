@@ -123,12 +123,18 @@ After approval, the owner implements in the named worktree/branch. For a multi-P
 
 ## `reference-version-history.md`
 
-One row per deploy. Format:
+One row per deploy or meaningful public release. This is private operational history for projects that use notes control; public repos usually use `CHANGELOG.md`, Git tags, and GitHub Releases instead.
+
+Template: `templates/reference-version-history.md.template`.
+
+Format:
 ```
 ## <VERSION> — YYYY-MM-DD — <one-line summary>
 
 - PR #<num>
 - SHA <full-sha>
+- Deployed/Released: <environment-or-release-channel>
+- Verification: <smoke-test-or-release-check>
 - <any notable detail>
 ```
 

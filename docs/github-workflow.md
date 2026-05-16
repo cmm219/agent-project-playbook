@@ -95,12 +95,21 @@ Required for high-risk production deploys. Optional for static/public utility re
 
 ## 9. Cleanup After Merge
 
-After a merged PR is deployed:
+Use targeted cleanup after a PR is verified merged. Use broad cleanup only at batch end or during explicit maintenance.
 
-- Remove the worktree: `git worktree remove .worktrees/<task_name>`
-- Delete the local branch: `git branch -d <prefix>/<task_name>`
-- Delete the remote branch: `git push origin --delete <prefix>/<task_name>`
-- Sync main checkout: `git fetch origin <default> && git pull --ff-only`
+Minimum safe sequence:
+
+1. Verify the PR state is `MERGED`.
+2. Verify the merge commit is present in `origin/<default>`.
+3. Delete the merged remote branch only if the project wants that cleanup.
+4. Remove only the matching clean worktree.
+5. Try safe local branch deletion with `git branch -d`.
+6. If `git branch -d` rejects the branch, keep it and report the reason. Do not escalate to `git branch -D` automatically.
+7. Sync the default-branch checkout with `git fetch origin <default> && git pull --ff-only`.
+
+Squash-merge caveat: after a squash merge, the local branch commit is often not an ancestor of `origin/<default>`, so `git branch -d` may reject the branch even though the PR is merged. That is expected. Keep the local branch ref unless a human explicitly approves force deletion.
+
+Template: `templates/scripts/cleanup_after_merge.ps1.template`.
 
 ## 10. PR Lifecycle
 

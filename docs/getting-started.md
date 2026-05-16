@@ -50,9 +50,11 @@ For optional Claude Code launch profiles:
 For version-disciplined projects:
 
 - `templates/VERSION.template`
+- `templates/reference-version-history.md.template` if the project uses notes/control deploy history
 - `templates/scripts/claim_version.ps1.template`
 - `templates/scripts/version_helpers.ps1.template`
 - `templates/scripts/check_version_unique.ps1.template`
+- `templates/scripts/cleanup_after_merge.ps1.template` if the project uses worktrees or frequent PR cleanup
 - `templates/workflows/version-check.yml.template`
 
 For notes/control projects:

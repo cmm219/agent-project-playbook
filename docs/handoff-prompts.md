@@ -60,11 +60,13 @@ Then read these files from the playbook and port only the relevant equivalents i
    - claim_version.ps1.template → <REPO_ROOT>/scripts/claim_version.ps1
    - version_helpers.ps1.template → <REPO_ROOT>/scripts/version_helpers.ps1
    - check_version_unique.ps1.template → <REPO_ROOT>/scripts/check_version_unique.ps1
+   - cleanup_after_merge.ps1.template → <REPO_ROOT>/scripts/cleanup_after_merge.ps1
    - check_control_hygiene.ps1.template → <REPO_ROOT>/scripts/check_control_hygiene.ps1
    - version-check.yml.template → <REPO_ROOT>/.github/workflows/version-check.yml
    - CONCURRENT_WORKTREES.md.template → <NOTES_VAULT_PATH>/projects/<PROJECT_NAME>/control/CONCURRENT_WORKTREES.md
    - CHANGELOG.md.template → <REPO_ROOT>/CHANGELOG.md
    - VERSION.template → <REPO_ROOT>/VERSION
+   - reference-version-history.md.template → <NOTES_VAULT_PATH>/projects/<PROJECT_NAME>/reference-version-history.md
 
 For Tier 1, usually create README/AGENTS/CHANGELOG/LICENSE/SECURITY/CI and skip VERSION/scripts/notes unless requested.
 
@@ -126,10 +128,11 @@ Create three coordinated artifacts that work together as a single discipline:
    - scripts/claim_version.ps1 (template: templates/scripts/claim_version.ps1.template)
    - scripts/version_helpers.ps1 (template: templates/scripts/version_helpers.ps1.template)
    - scripts/check_version_unique.ps1 (template: templates/scripts/check_version_unique.ps1.template)
+   - scripts/cleanup_after_merge.ps1 (template: templates/scripts/cleanup_after_merge.ps1.template) if the repo uses worktrees or frequent PR cleanup
 
 4. GitHub Actions workflow at .github/workflows/version-check.yml (template: templates/workflows/version-check.yml.template) that runs check_version_unique.ps1 on pull_request.
 
-5. A version history log file in the notes vault at <NOTES_VAULT_PATH>/projects/<PROJECT_NAME>/reference-version-history.md. Each deploy appends one row.
+5. A version history log file in the notes vault at <NOTES_VAULT_PATH>/projects/<PROJECT_NAME>/reference-version-history.md (template: templates/reference-version-history.md.template). Each deploy or meaningful release appends one row.
 
 Hard rule going forward: every shipped PR must bump VERSION and add a CHANGELOG.md entry in the same commit. CI enforces uniqueness; CHANGELOG entry is enforced by review.
 
