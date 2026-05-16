@@ -32,8 +32,15 @@ function Invoke-ClaudeProfile {
 }
 
 function claudelean {
+    $leanArgs = @("--strict-mcp-config", "--no-chrome", "--effort", "medium")
+    $leanModel = [Environment]::GetEnvironmentVariable("CLAUDE_PROFILE_LEAN_MODEL", "Process")
+
+    if (-not [string]::IsNullOrWhiteSpace($leanModel)) {
+        $leanArgs = @("--model", $leanModel) + $leanArgs
+    }
+
     Invoke-ClaudeProfile `
-        -ClaudeArgs @("--strict-mcp-config", "--no-chrome", "--effort", "medium") `
+        -ClaudeArgs $leanArgs `
         -ProcessEnv @{
             ENABLE_CLAUDEAI_MCP_SERVERS = "false"
             CLAUDE_CODE_DISABLE_1M_CONTEXT = "1"

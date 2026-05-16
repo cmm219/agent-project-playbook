@@ -84,7 +84,24 @@ Good first tools:
 
 Keep MCP optional. It can be useful for IDE-style clients, but an agent workflow should not require a slow server round trip for every local fact lookup.
 
-### 4. Cited Source Reads
+### 4. Compiled Guidance Plus Source Fallback
+
+For projects with a notes vault, separate compiled guidance from raw source evidence:
+
+- compiled wiki/reference docs: durable patterns, decisions, gotchas, and runbooks
+- source notes: session notes, decision logs, audit packets, and historical evidence
+- repo files: live code truth
+
+The practical routing rule:
+
+1. Search the compiled wiki/reference docs first.
+2. If a citation or source link does not resolve there, search the broader notes vault by basename or stem before calling it broken.
+3. Use repo search for exact current implementation details.
+4. Use web/current docs only for external behavior that may have changed.
+
+This keeps the agent fast without pretending the compiled wiki contains every source artifact.
+
+### 5. Cited Source Reads
 
 Search results are not enough. Agents should read the relevant source files and cite paths.
 
@@ -100,7 +117,7 @@ Bad answer shape:
 I remember we decided this earlier.
 ```
 
-### 5. Compiled Truth Plus Timeline
+### 6. Compiled Truth Plus Timeline
 
 For complex projects, keep a short compiled truth at the top of key docs and move history below it.
 
@@ -118,6 +135,42 @@ Useful shape:
 
 The current truth gives agents fast orientation. The timeline keeps the evidence auditable.
 
+### 7. Staging New Knowledge
+
+Do not let agents casually rewrite compiled project knowledge during normal work. Use a staging path first, then compile deliberately.
+
+Useful pattern:
+
+```text
+knowledge/wiki/inbox.md       # short candidate learnings with source links
+knowledge/wiki/<topic>.md     # compiled, curated guidance
+```
+
+Agents may propose or append inbox lines for durable new lessons. They should edit compiled articles only when the user explicitly asks to compile/update the wiki or update a named article.
+
+### 8. Subagents Need Explicit Routing
+
+Do not assume spawned agents inherit the parent agent's local knowledge rules, startup files, or filesystem access.
+
+When delegating, include a compact routing contract in the subagent prompt:
+
+```text
+Use local files first. Do not use MCP for local markdown recall.
+Search the compiled wiki/reference docs first, then the broader notes vault by source stem if needed.
+Use repo grep for live code truth.
+Cite exact file paths.
+Keep context small: read 1-3 relevant files unless you explain why more are needed.
+Report which files you read and whether MCP/web was used.
+```
+
+For Claude Code multi-agent or subprocess-style runs, also make sure the parent session has filesystem access to the notes root. If launching from outside the notes vault, pass an allowed directory such as:
+
+```shell
+claude --add-dir "<NOTES_VAULT_PATH>"
+```
+
+The same command shape works from PowerShell, bash, and zsh. Use placeholders in public docs. Do not publish machine-specific paths.
+
 ## What To Avoid
 
 - Loading a full notes vault at startup.
@@ -127,6 +180,8 @@ The current truth gives agents fast orientation. The timeline keeps the evidence
 - Requiring shell restarts or environment rituals before every agent session.
 - Letting source federation or stale indexes make old project facts look current.
 - Returning uncited claims from memory.
+- Assuming subagents inherited the parent startup instructions.
+- Editing compiled knowledge articles during normal task work instead of staging candidates first.
 
 ## Public-Friendly Knowledge Runtime
 
@@ -141,3 +196,15 @@ A good public design target is:
 - The system works on Windows, macOS, and Linux without a daemon.
 
 This is a project setup principle, not a requirement to adopt any specific tool.
+
+## Build Tooling Only After A Repeatable Failure
+
+Before adding a CLI, daemon, MCP server, database, embeddings index, or manifest generator, capture the failure that forced the need:
+
+- What question failed?
+- Which files should have answered it?
+- Did local search fail, or did the agent route badly?
+- Would a smaller startup rule or better index entry fix it?
+- Can the fix stay as markdown plus search?
+
+If the answer is still "plain local files work," do not add infrastructure.
