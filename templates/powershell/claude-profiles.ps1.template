@@ -1,0 +1,58 @@
+# Claude Code launch profile examples.
+#
+# Put these in your PowerShell profile or dot-source this file from your
+# profile. Keep machine-specific paths, tokens, and private MCP config out of
+# public repositories.
+#
+# These profiles intentionally do not use --bare because --bare skips normal
+# CLAUDE.md auto-discovery.
+
+function Invoke-ClaudeProfile {
+    param(
+        [string[]]$ClaudeArgs = @(),
+        [hashtable]$ProcessEnv = @{},
+        [string[]]$PassthroughArgs = @()
+    )
+
+    $oldValues = @{}
+
+    foreach ($key in $ProcessEnv.Keys) {
+        $oldValues[$key] = [Environment]::GetEnvironmentVariable($key, "Process")
+        [Environment]::SetEnvironmentVariable($key, [string]$ProcessEnv[$key], "Process")
+    }
+
+    try {
+        & claude @ClaudeArgs @PassthroughArgs
+    }
+    finally {
+        foreach ($key in $ProcessEnv.Keys) {
+            [Environment]::SetEnvironmentVariable($key, $oldValues[$key], "Process")
+        }
+    }
+}
+
+function claudelean {
+    Invoke-ClaudeProfile `
+        -ClaudeArgs @("--strict-mcp-config", "--no-chrome", "--effort", "medium") `
+        -ProcessEnv @{
+            ENABLE_CLAUDEAI_MCP_SERVERS = "false"
+            CLAUDE_CODE_DISABLE_1M_CONTEXT = "1"
+        } `
+        -PassthroughArgs $args
+}
+
+function claude200 {
+    $heavyModel = [Environment]::GetEnvironmentVariable("CLAUDE_PROFILE_HEAVY_MODEL", "Process")
+
+    if ([string]::IsNullOrWhiteSpace($heavyModel)) {
+        $heavyModel = "opus"
+    }
+
+    Invoke-ClaudeProfile `
+        -ClaudeArgs @("--strict-mcp-config", "--no-chrome", "--model", $heavyModel, "--effort", "medium") `
+        -ProcessEnv @{
+            ENABLE_CLAUDEAI_MCP_SERVERS = "false"
+            CLAUDE_CODE_DISABLE_1M_CONTEXT = "1"
+        } `
+        -PassthroughArgs $args
+}

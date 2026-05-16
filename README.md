@@ -13,6 +13,7 @@ This repo is a public-safe starter playbook. It is not a framework and it is not
 - Handoff prompts for asking an agent to apply the playbook.
 - Templates for `AGENTS.md`, `CLAUDE.md`, changelogs, version files, PowerShell helpers, and GitHub Actions.
 - Brain-first knowledge guidance for keeping agents useful without loading a whole notes vault every run.
+- Optional Claude Code launch profiles for fast local-first sessions without skipping `CLAUDE.md` routing.
 
 ## Quick Start
 
@@ -40,7 +41,8 @@ pwsh ./scripts/sanitize-check.ps1
 4. [GitHub Workflow](docs/github-workflow.md)
 5. [Notes / Control Structure](docs/notes-control-structure.md)
 6. [Brain-First Project Knowledge](docs/agent-knowledge.md)
-7. [Handoff Prompts](docs/handoff-prompts.md)
+7. [Claude Profiles](docs/claude-profiles.md)
+8. [Handoff Prompts](docs/handoff-prompts.md)
 
 ## Repository Layout
 
