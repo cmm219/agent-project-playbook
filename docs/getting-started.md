@@ -43,6 +43,10 @@ For Claude Code projects:
 
 - `templates/CLAUDE.md.template`
 
+For optional Claude Code launch profiles:
+
+- `templates/powershell/claude-profiles.ps1.template`
+
 For version-disciplined projects:
 
 - `templates/VERSION.template`
