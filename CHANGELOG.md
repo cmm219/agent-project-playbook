@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.1.3.0] - 2026-05-16
+
+- Expand README usage guidance for each playbook component.
+- Add more practical Tier 1 and Tier 2 example README instructions.
+
 ## [0.1.2.0] - 2026-05-16
 
 - Add conservative post-merge cleanup guidance and template.
