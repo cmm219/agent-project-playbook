@@ -87,6 +87,12 @@ agent-project-playbook/
 - High-risk production system: use [Tier 3](docs/setup-tiers.md#tier-3-high-risk-production-system), including version scripts, worktrees, exact-SHA deploy rules, and cleanup discipline.
 - Existing repo that only needs version tracking: use Prompt 3 in [docs/handoff-prompts.md](docs/handoff-prompts.md).
 
+## Versioning Note
+
+The playbook includes templates for four-segment operational versioning: `major.minor.patch.micro`. That is intentional for projects with many small agent-driven PRs where docs, cleanup, patches, and larger feature work should be distinguishable without overloading patch releases.
+
+This is not strict three-segment SemVer. Small public repos or packages whose tooling expects SemVer can use normal `major.minor.patch` tags and GitHub Releases instead. The first playbook releases were published close together because this repo was extracted, sanitized, documented, and released in one pass; each release has notes, but future releases should be less frequent and more bundled.
+
 ## What Not To Copy Blindly
 
 Do not copy the Tier 3 setup into every project. Start with the smallest tier that fits the risk.
@@ -97,7 +103,7 @@ Do not treat generated summaries as truth. Keep source markdown as the authority
 
 ## Companion Skills
 
-This playbook pairs well with [McStacks Codex Claude Skills](https://github.com/cmm219/mcstacks-codex-claude-skills), especially `claude-readonly-review`, `claude-design-loop`, `pr-batching`, `prd-review-loop`, and `prd-ship-loop`.
+This playbook pairs well with [McStacks: Codex Claude Skills](https://github.com/cmm219/mcstacks-codex-claude-skills), especially `claude-readonly-review`, `claude-design-html`, `claude-design-loop`, `pr-batching`, `prd-review-loop`, and `prd-ship-loop`.
 
 The repos are separate on purpose:
 
