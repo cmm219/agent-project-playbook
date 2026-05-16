@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.2.0] - 2026-05-16
+
+- Add conservative post-merge cleanup guidance and template.
+- Add a version-history template for notes/control projects.
+- Clarify squash-merge cleanup behavior and safe branch deletion limits.
+
 ## [0.1.1.0] - 2026-05-16
 
 - Add Claude Code launch profile guidance.
