@@ -91,6 +91,15 @@ agent-project-playbook/
 
 The playbook includes templates for four-segment operational versioning: `major.minor.patch.micro`. That is intentional for projects with many small agent-driven PRs where docs, cleanup, patches, and larger feature work should be distinguishable without overloading patch releases.
 
+| Segment | Use For |
+| --- | --- |
+| `major` | Breaking platform, API, auth, data-contract, or stable milestone changes |
+| `minor` | Meaningful new capabilities, integrations, workflows, or major UX direction |
+| `patch` | Bug fixes and behavior corrections |
+| `micro` | Very small shipped changes such as docs, copy, cleanup, styling polish, or low-risk internal adjustments |
+
+Example: `0.1.2.3` means pre-1.0 work, first minor line, second patch line, third micro change after that patch.
+
 This is not strict three-segment SemVer. Small public repos or packages whose tooling expects SemVer can use normal `major.minor.patch` tags and GitHub Releases instead. The first playbook releases were published close together because this repo was extracted, sanitized, documented, and released in one pass; each release has notes, but future releases should be less frequent and more bundled.
 
 ## What Not To Copy Blindly
