@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.3.1] - 2026-05-16
+
+- Document compiled-knowledge plus broader-vault fallback routing.
+- Add public-safe subagent prompt contract guidance for local knowledge work.
+- Add Claude multi-agent `--add-dir` notes-access guidance.
+- Clarify inbox/staging guardrails for durable learnings before compiled article updates.
+- Allow temporary lean-profile model pinning via `CLAUDE_PROFILE_LEAN_MODEL` in the PowerShell profile template.
+
 ## [0.1.3.0] - 2026-05-16
 
 - Expand README usage guidance for each playbook component.

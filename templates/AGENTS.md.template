@@ -40,6 +40,20 @@ Stop only for secrets/access, destructive or irreversible operations outside sco
 
 <DESCRIBE_LOCAL_DEV_SETUP_AND_PORTS>. In worktrees/secondary contexts set `<BACKGROUND_JOBS_FLAG>=false`.
 
+## Knowledge Routing
+
+Keep this block in sync with the same block in `CLAUDE.md` when a project uses both agents.
+
+- Use local files first for project memory. Do not use MCP as the hot path for local markdown recall.
+- Use `<NOTES_VAULT_PATH>/knowledge/wiki` or the project's compiled docs for durable guidance: patterns, decisions, gotchas, runbooks, and cross-project lessons.
+- If a wiki/source link does not resolve in the compiled docs, search the broader notes vault by basename/stem before calling it broken.
+- Use repo grep/search for live code truth: exact symbols, route names, schemas, tests, and current implementation.
+- Use web/current official docs only for time-sensitive external facts or software behavior that may have changed.
+- Cite local file paths when using notes or docs.
+- Keep context small: prefer 1-3 relevant files, use narrow search/glob patterns, and do not load the whole wiki/vault.
+- Durable new learnings should go through `<NOTES_VAULT_PATH>/knowledge/wiki/inbox.md` or the project's explicit knowledge-update flow with source links.
+- Do not directly edit compiled knowledge articles unless the user explicitly asks to compile/update them.
+
 ## Don't-Drag-Names Guard (when porting setup from another project)
 
 - Read prior-project files as structural templates only.

@@ -59,12 +59,38 @@ For local-first knowledge work:
 
 Do not automatically add `--dangerously-skip-permissions` to a public template. If a user wants that mode for a trusted sandbox, they can pass it explicitly per run.
 
+## Multi-Agent And Notes Access
+
+Claude subagents or subprocess-style runs may not inherit the parent session's local knowledge routing or filesystem access. If a task depends on a notes vault or local wiki, make both pieces explicit:
+
+- Put the local-first routing rule in the parent prompt and in each subagent prompt.
+- Ask each subagent to report files read, whether MCP/web was used, and whether it needed broader-vault fallback.
+- Launch from a directory that can read the notes root, or pass the notes root explicitly:
+
+```powershell
+claude --add-dir "<NOTES_VAULT_PATH>"
+```
+
+Use more than one `--add-dir` only when a task genuinely needs multiple roots. Keep public templates generic; never commit a personal machine path.
+
+## Temporary Model Pinning
+
+Sometimes a default non-interactive Claude route can fail while a specific model route still works. A typical symptom is headless `claude -p` runs exiting non-zero while interactive Claude still starts. Treat a profile-level model pin as an outage workaround, not a memory-system design.
+
+Public-safe pattern:
+
+- Keep the normal profile unpinned by default.
+- Allow an environment variable such as `CLAUDE_PROFILE_LEAN_MODEL` to pin a model temporarily.
+- Remove the pin after the default route recovers.
+- Do not hardcode personal model names or incident-specific settings into public templates.
+
 ## Setup
 
 1. Copy the template into your PowerShell profile or dot-source it from your profile.
 2. Replace any model aliases or environment variables with values that fit your Claude Code install.
 3. Run `claudelean --version` or `claude200 --version` to confirm arguments forward to Claude.
 4. Ask a small knowledge-routing question and confirm Claude cites local files instead of loading broad context.
+5. For multi-agent work, run one small subagent test and confirm the child agent can read the notes root with `--add-dir` when needed.
 
 For example, a project can use:
 
