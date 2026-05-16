@@ -1,0 +1,15 @@
+name: Sanitize check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  sanitize:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run sanitize check
+        shell: pwsh
+        run: ./scripts/sanitize-check.ps1

@@ -1,0 +1,47 @@
+# Concurrent Chat Worktree Rules
+
+When multiple Codex/Claude chats are active on the same project, branch-only isolation is not enough.
+
+Each simultaneous chat must have:
+- Its own folder/worktree.
+- Its own branch.
+- A small owned file list.
+- A clear do-not-touch list.
+- Assigned ports, or no server use.
+
+Branch-only isolation is not enough because uncommitted files, generated files, local server state, and tool side effects are shared inside one folder.
+
+## Default Pattern
+
+- **Main checkout:** `<REPO_ROOT>` stays on the default branch (`<DEFAULT_BRANCH>`). Do not edit there during parallel work.
+- **Per-task worktrees:** `<REPO_ROOT>/.worktrees/<task_name>/` — one per active branch.
+- **Branch prefixes:** `codex/*`, `claude/*`, `human/*` to identify who owns the branch.
+
+## Port Rule
+
+Only one chat should use the canonical local-dev backend/frontend ports at a time unless alternate ports are explicitly assigned. Document canonical and alternate ports in the project's `CLAUDE.md` / `AGENTS.md`.
+
+## Before Any Chat Edits
+
+1. Run `git branch --show-current`.
+2. Run `git status --short`.
+3. Confirm folder, branch, owned files, and do-not-touch files.
+
+## Review-Gated Work
+
+For risky work or parallel Codex/Claude sessions, create a plan in `tasks/audits/` before implementation.
+
+Use normal work for small safe tasks. Use `tasks/audits/` only when work needs a review gate: risky changes, broad refactors, parallel Codex/Claude work, PR/version/deploy coordination, data impact, external-send impact, or anything where one agent should review before another implements.
+
+- One agent owns implementation.
+- One agent reviews the plan.
+- The plan names the worktree, branch, allowed files, do-not-touch files, proof required, and stop conditions.
+- Implementation waits for approval when the plan says `status: review-needed`.
+- The PR body and session note link the approved plan and summarize the review verdict.
+
+## Hard Rules
+
+- Do not move or delete worktrees while another chat may be active.
+- Worktrees may share parent repo dependencies such as `venv` or `node_modules`; avoid package installs from a worktree unless the project explicitly allows it.
+- Do not start duplicate long-running dev servers from multiple worktrees unless ports and background jobs are assigned.
+- Disable schedulers, workers, outbox processors, email senders, notification senders, and other external-send jobs in worktree contexts unless the project explicitly allows them.

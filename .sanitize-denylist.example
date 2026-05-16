@@ -1,0 +1,7 @@
+# Copy this file to .sanitize-denylist.local and add private terms that must never appear in public commits.
+# One plain-text pattern per line. Blank lines and # comments are ignored.
+#
+# Examples:
+# private-client-name
+# internal-project-code-name
+# personal-email@example.com

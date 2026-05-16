@@ -1,0 +1,4 @@
+.sanitize-denylist.local
+.worktrees/
+.DS_Store
+Thumbs.db

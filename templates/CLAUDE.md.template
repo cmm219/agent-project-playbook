@@ -1,0 +1,55 @@
+# <PROJECT_NAME>
+
+<ONE_LINE_PROJECT_DESCRIPTION>
+
+## Start Here
+
+Read only these at session start:
+
+- `<NOTES_VAULT_PATH>/projects/<PROJECT_NAME>/control/STATE.md`
+- `<NOTES_VAULT_PATH>/projects/<PROJECT_NAME>/control/TASKS.md`
+
+Read `control/CODEX_GUARDRAILS.md` before non-trivial edits, risky work, deploys, or data changes.
+
+## Notes Config
+
+project: <PROJECT_NAME>
+write_path: <NOTES_VAULT_PATH>/projects/<PROJECT_NAME>
+
+## Hard Rules
+
+- Notes-vault control files are authoritative.
+- Keep `STATE.md` and `TASKS.md` short.
+- Move open/deferred work to `<NOTES_VAULT_PATH>/projects/<PROJECT_NAME>/tasks/backlog.md`, plans to `<NOTES_VAULT_PATH>/projects/<PROJECT_NAME>/tasks/audits/`, completed work to `<NOTES_VAULT_PATH>/projects/<PROJECT_NAME>/tasks/archive/YYYY-MM-done.md`, and session history to `<NOTES_VAULT_PATH>/projects/<PROJECT_NAME>/sessions/`.
+- Use normal work for small safe tasks. Use `tasks/audits/` only when work needs a review gate: risky changes, broad refactors, parallel Codex/Claude work, PR/version/deploy coordination, data or money impact, or anything where one agent should review before another implements. Plans with `status: review-needed` must not be implemented until reviewed.
+- Work in `.worktrees/<task>/`, never the main checkout.
+- Branch from `origin/<DEFAULT_BRANCH>`, not local `<DEFAULT_BRANCH>`.
+- Never touch another agent's branch, worktree, or PR.
+- Bump `VERSION` only with `scripts/claim_version.ps1`; update `CHANGELOG.md` in the same commit.
+- Verify before claiming done.
+- <ADD_DOMAIN_HARD_RULES_HERE_IF_APPLICABLE>
+
+## Batch Autonomy
+
+When the user approves a PRD/task list with "do it all", "keep going", "finish this", "ship it", or equivalent, treat the approved list as one batch scope.
+
+Inside a batch:
+- Multiple PRs may be used. Individual PR merge/deploy is not a stop condition.
+- Continue to the next approved item automatically after verification.
+- Each PR must map to an approved PRD/task list item; stop before inventing new scope.
+- Claude review is batch-level by default, with focused mid-batch review only for material new risk.
+- Control/session/archive updates happen at batch end unless there is a real blocker, handoff, or interruption.
+
+Stop only for secrets/access, destructive or irreversible operations outside scope, unclear product/data/money risk, conflicting instructions, failed production smoke needing rollback/roll-forward choice, or full batch completion.
+
+## Version Policy
+
+Versions use `major.minor.patch.micro`. Early-alpha SaaS starts at `0.1.0.0`; reserve `1.0.0.0` for stable/public release.
+
+## Deploy
+
+Deploy <DEPLOY_TARGET> only after merge to `<DEFAULT_BRANCH>`. Use exact SHA. Verify `<HEALTH_PATH>`, deployed `VERSION`, SHA, and logs.
+
+## Local
+
+<DESCRIBE_LOCAL_DEV_SETUP_AND_PORTS>. In worktrees/secondary contexts set `<BACKGROUND_JOBS_FLAG>=false`.
