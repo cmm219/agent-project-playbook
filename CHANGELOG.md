@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.1.4.0] - 2026-06-04
+
+- Add an honest comparison of local-first routing vs. a database-backed brain (GBrain), with pros/cons and when to use which.
+- Add a "how it works, with evidence" guide, including a deterministic, zero-token audit script for measuring whether the proactive knowledge-check signal is firing.
+- Add a README "Is this for you, or do you want GBrain?" section and link both new docs from the component table and reading order.
+
 ## [0.1.3.1] - 2026-05-16
 
 - Document compiled-knowledge plus broader-vault fallback routing.

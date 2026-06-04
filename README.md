@@ -16,6 +16,14 @@ It is especially useful when:
 - production deploys need exact-SHA verification,
 - you want Codex and Claude Code to cooperate without blurring who owns edits and QA.
 
+## Is This For You, Or Do You Want GBrain?
+
+This playbook is local-first: plain markdown, a tiny routing rule, and the agent reads the 1-3 right files. No database, no server, and no tokens in the retrieval path, and it works the moment you clone a repo. That keeps day-to-day sessions fast and deterministic.
+
+If instead you need a database-backed brain that synthesizes answers across a very large, cross-domain corpus — or a shared team brain with scoped access — Garry Tan's [GBrain](https://github.com/garrytan/gbrain) is built for exactly that, and the two compose well.
+
+See [Local-First Routing vs. a Database-Backed Brain](docs/gbrain-vs-playbook.md) for an honest side-by-side, pros and cons, and how to run both — and [How It Works, With Evidence](docs/how-it-works-evidence.md) for a zero-token way to prove the local-first approach is actually firing.
+
 ## What It Gives You
 
 - Setup tiers for lightweight utility repos, medium product repos, and high-risk production systems.
@@ -40,6 +48,8 @@ It is especially useful when:
 | Knowledge routing | Agents need prior project knowledge without a database/MCP hot path | [docs/agent-knowledge.md](docs/agent-knowledge.md) |
 | Claude profiles | You want repeatable lean/heavy Claude Code launch commands | [docs/claude-profiles.md](docs/claude-profiles.md) |
 | Handoff prompts | You want an agent to port the setup into another repo | [docs/handoff-prompts.md](docs/handoff-prompts.md) |
+| Local-first vs GBrain | You are deciding between zero-infra routing and a database-backed brain | [docs/gbrain-vs-playbook.md](docs/gbrain-vs-playbook.md) |
+| Proof it works | You want the mechanism plus a zero-token way to measure adoption | [docs/how-it-works-evidence.md](docs/how-it-works-evidence.md) |
 
 ## Quick Start
 
@@ -69,6 +79,8 @@ pwsh ./scripts/sanitize-check.ps1
 6. [Brain-First Project Knowledge](docs/agent-knowledge.md)
 7. [Claude Profiles](docs/claude-profiles.md)
 8. [Handoff Prompts](docs/handoff-prompts.md)
+9. [Local-First Routing vs. a Database-Backed Brain](docs/gbrain-vs-playbook.md)
+10. [How It Works, With Evidence](docs/how-it-works-evidence.md)
 
 ## Repository Layout
 
