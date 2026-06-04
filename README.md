@@ -14,6 +14,9 @@ I built this running real projects with Codex and Claude Code side by side, and 
 - A second agent or chat touched the same repo and clobbered the first one's work.
 - PRs landed with no version/changelog discipline, so releases became guesswork.
 - "Durable knowledge" lived in chat logs that nobody could find again.
+- Loading a whole notes vault every session bloated the context window and slowed the agent to a crawl.
+
+That last one matters more than it looks. The fix for a forgetful agent is *not* to stuff everything into its context — that bloats the prompt, breaks caching, and makes every turn slower and pricier. The trick is the opposite: keep the always-loaded part tiny (a few lines of routing), and let the agent pull the 1–3 files it actually needs on demand. Small startup brief, fast sessions, warm cache.
 
 The reflex is to reach for infrastructure — a database, an MCP server, embeddings. I tried the opposite: keep memory as markdown, add a one-line "check local files before answering" rule, and only escalate to heavier tooling when a *repeatable* failure forces it. It stayed fast, stayed cheap, and I could prove it was working with a [zero-token audit](docs/how-it-works-evidence.md). This repo is that approach, sanitized so anyone can copy it.
 
