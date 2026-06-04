@@ -1,8 +1,21 @@
 # Agent Project Playbook
 
-Bootstrap new software projects with agent-safe rules, setup tiers, notes/control structure, and PR/version discipline for Codex + Claude Code.
+**Give your coding agent a memory and a rulebook — with plain markdown, no database, and no tokens on the retrieval path.**
 
-This repo is a public-safe starter playbook. It is not a framework and it is not a runtime. Use it as a reference when starting a new repo, adding agent instructions to an existing project, or deciding how much process a project actually needs.
+Coding agents are brilliant and amnesiac. They forget what you decided last week, re-litigate settled choices, drift outside scope, and rewrite files you didn't ask them to touch. This playbook fixes that with the lightest thing that works: a tiny always-loaded routing rule, markdown your agent reads on demand, and clear guardrails for scope, PRs, versions, and handoffs. It works the moment you clone — Codex and Claude Code both.
+
+It is a playbook, not a framework or a runtime. There's nothing to keep running.
+
+## Why This Exists
+
+I built this running real projects with Codex and Claude Code side by side, and kept hitting the same failures:
+
+- The agent answered project questions from stale memory instead of checking the source, and got them wrong.
+- A second agent or chat touched the same repo and clobbered the first one's work.
+- PRs landed with no version/changelog discipline, so releases became guesswork.
+- "Durable knowledge" lived in chat logs that nobody could find again.
+
+The reflex is to reach for infrastructure — a database, an MCP server, embeddings. I tried the opposite: keep memory as markdown, add a one-line "check local files before answering" rule, and only escalate to heavier tooling when a *repeatable* failure forces it. It stayed fast, stayed cheap, and I could prove it was working with a [zero-token audit](docs/how-it-works-evidence.md). This repo is that approach, sanitized so anyone can copy it.
 
 ## Who This Is For
 
