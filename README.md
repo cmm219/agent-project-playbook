@@ -1,6 +1,8 @@
 # Agent Project Playbook
 
-**Give your coding agent a memory and a rulebook — with plain markdown, no database, and no tokens on the retrieval path.**
+**Give your coding agent a memory and a rulebook — fast. Plain markdown, no database, no server, no tokens on the retrieval path.**
+
+Most "agent brains" route every question through a database, an MCP server, or an embeddings index — a network round trip, and often an extra LLM call, before the agent can even start. That's why they feel slow. This one is a local file read: sub-second, offline, no warm-up.
 
 Coding agents are brilliant and amnesiac. They forget what you decided last week, re-litigate settled choices, drift outside scope, and rewrite files you didn't ask them to touch. This playbook fixes that with the lightest thing that works: a tiny always-loaded routing rule, markdown your agent reads on demand, and clear guardrails for scope, PRs, versions, and handoffs. It works the moment you clone — Codex and Claude Code both.
 
