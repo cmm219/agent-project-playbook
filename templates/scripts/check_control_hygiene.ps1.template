@@ -1,56 +1,131 @@
-# Validates that control/ pointer files stay short and don't accumulate journal-style content.
-# Replace <NOTES_VAULT_PATH> and <PROJECT_NAME> with the values for this project.
+# Validates that notes control pointer files stay short and don't accumulate journal-style content.
+# Generic across projects: only the $NotesRoot default differs per project.
 
 param(
-    [string]$NotesRoot = "<NOTES_VAULT_PATH>/projects/<PROJECT_NAME>"
+    [string]$NotesRoot = "<NOTES_VAULT_PATH>/projects/<PROJECT_NAME>",
+    [string]$RepoRoot = ""
 )
 
 $ErrorActionPreference = "Stop"
 
+if ([string]::IsNullOrWhiteSpace($RepoRoot)) {
+    if (-not [string]::IsNullOrWhiteSpace($PSScriptRoot)) {
+        $RepoRoot = (Split-Path -Parent $PSScriptRoot)
+    } else {
+        $RepoRoot = (Get-Location).Path
+    }
+}
+
 $state = Join-Path $NotesRoot "control/STATE.md"
 $tasks = Join-Path $NotesRoot "control/TASKS.md"
 $guardrails = Join-Path $NotesRoot "control/CODEX_GUARDRAILS.md"
+$backlog = Join-Path $NotesRoot "tasks/backlog.md"
 
+$failed = $false
+function Report-Failure {
+    param([string]$Message)
+    Write-Host "FAIL $Message" -ForegroundColor Red
+    $script:failed = $true
+}
+function Report-Warning {
+    param([string]$Message)
+    Write-Host "WARN $Message" -ForegroundColor Yellow
+}
+
+# --- Control file line caps ---
 $limits = @(
     @{ Path = $state; Name = "STATE.md"; MaxLines = 60 },
     @{ Path = $tasks; Name = "TASKS.md"; MaxLines = 60 },
     @{ Path = $guardrails; Name = "CODEX_GUARDRAILS.md"; MaxLines = 80 }
 )
-
-$failed = $false
-
 foreach ($item in $limits) {
     if (-not (Test-Path $item.Path)) {
-        Write-Error "$($item.Name) missing at $($item.Path)"
-        $failed = $true
+        Report-Failure "$($item.Name) missing at $($item.Path)"
         continue
     }
-
-    $lines = @(Get-Content -LiteralPath $item.Path)
-    $count = $lines.Count
+    $count = @(Get-Content -LiteralPath $item.Path).Count
     if ($count -gt $item.MaxLines) {
-        Write-Error "$($item.Name) has $count lines; limit is $($item.MaxLines). Move open/deferred work to tasks/backlog.md, plans to tasks/audits/, completed work to tasks/archive/YYYY-MM-done.md, session history to sessions/, and deploy history to reference-version-history.md."
-        $failed = $true
+        Report-Failure "$($item.Name) has $count lines; limit is $($item.MaxLines). Move detail to sessions/, tasks/backlog.md, tasks/audits/, tasks/archive/YYYY-MM-done.md, or reference-version-history.md and link the path."
     } else {
         Write-Host "OK $($item.Name): $count/$($item.MaxLines) lines"
     }
 }
 
-$tasksText = Get-Content -Raw -LiteralPath $tasks
-$focusMatches = [regex]::Matches($tasksText, "(?m)^- \*\*")
-if ($focusMatches.Count -gt 5) {
-    Write-Error "TASKS.md has $($focusMatches.Count) bold task/watch bullets; keep 3-5 total."
-    $failed = $true
-} else {
-    Write-Host "OK TASKS.md focus/watch bullets: $($focusMatches.Count)/5"
+# --- AGENTS.md / CLAUDE.md budgets (warn over WarnLines, fail over MaxLines) ---
+$instructionLimits = @(
+    @{ Path = (Join-Path $RepoRoot "AGENTS.md"); Name = "AGENTS.md"; WarnLines = 180; MaxLines = 220 },
+    @{ Path = (Join-Path $RepoRoot "CLAUDE.md"); Name = "CLAUDE.md"; WarnLines = 180; MaxLines = 220 }
+)
+foreach ($item in $instructionLimits) {
+    if (-not (Test-Path $item.Path)) { continue }
+    $count = @(Get-Content -LiteralPath $item.Path).Count
+    if ($count -gt $item.MaxLines) {
+        Report-Failure "$($item.Name) has $count lines; hard limit is $($item.MaxLines). Move long checklists/runbooks to reference/ and leave path pointers."
+    } elseif ($count -gt $item.WarnLines) {
+        Report-Warning "$($item.Name) has $count lines; warn threshold is $($item.WarnLines) (hard max $($item.MaxLines)). Consider moving detail to reference/."
+    } else {
+        Write-Host "OK $($item.Name): $count/$($item.WarnLines) warn ($($item.MaxLines) max)"
+    }
 }
 
+# --- tasks/backlog.md target ---
+if (Test-Path $backlog) {
+    $bc = @(Get-Content -LiteralPath $backlog).Count
+    if ($bc -gt 150) { Report-Warning "tasks/backlog.md has $bc lines; target 150. Split or archive stale items." }
+    else { Write-Host "OK tasks/backlog.md: $bc/150 target" }
+}
+
+# --- TASKS.md focus bullets ---
+if (Test-Path $tasks) {
+    $tasksText = Get-Content -Raw -LiteralPath $tasks
+    $focusMatches = [regex]::Matches($tasksText, "(?m)^- \*\*")
+    if ($focusMatches.Count -gt 5) {
+        Report-Failure "TASKS.md has $($focusMatches.Count) bold task/watch bullets; keep 3-5 total."
+    } else {
+        Write-Host "OK TASKS.md focus/watch bullets: $($focusMatches.Count)/5"
+    }
+
+    # Focus-bullet hygiene: length cap (Current Focus + watch sections) +
+    # completed-work / inlined-detail detectors (Current Focus only).
+    $warnBulletChars = 300
+    $maxBulletChars = 500
+    $exemptHeadings = @("## References", "## Completion Pointers")
+    $doneMarkers = 'SHIPPED|\bDONE\b|\bCOMPLETED?\b|merged/deployed|deployed as|- \[x\]|✅'
+    $shaPattern = '\b(?=[0-9a-f]*[0-9])[0-9a-f]{7,40}\b'
+    $inScope = $false; $inCurrentFocus = $false; $lineNo = 0
+    $overMax = @(); $overWarn = @(); $doneHits = @(); $refHits = @()
+    foreach ($line in ($tasksText -split "`n")) {
+        $lineNo++
+        $t = $line.TrimEnd("`r")
+        if ($t -match '^## Current Focus') { $inScope = $true; $inCurrentFocus = $true; continue }
+        if ($t -match '^## ') { $inCurrentFocus = $false; $inScope = ($exemptHeadings -notcontains $t.Trim()); continue }
+        if ($t -notmatch '^\s*- ') { continue }
+        if ($inScope) {
+            if ($t.Length -gt $maxBulletChars) { $overMax += "L$lineNo ($($t.Length) chars)" }
+            elseif ($t.Length -gt $warnBulletChars) { $overWarn += "L$lineNo ($($t.Length) chars)" }
+        }
+        if ($inCurrentFocus) {
+            if ($t -match $doneMarkers) { $doneHits += "L$lineNo" }
+            $refs = ([regex]::Matches($t, 'PR #\d+')).Count + ([regex]::Matches($t, $shaPattern)).Count + ([regex]::Matches($t, 'C:/Users')).Count
+            if ($refs -gt 2) { $refHits += "L$lineNo ($refs refs)" }
+        }
+    }
+    if ($overMax.Count -gt 0) {
+        Report-Failure "TASKS.md over-long focus bullets ($maxBulletChars char max): $($overMax -join ', '). A focus bullet is a one-line pointer ending in a [[session-link]] or path; move narrative to sessions/ or tasks/archive/."
+    } else {
+        Write-Host "OK TASKS.md focus bullet length (<= $maxBulletChars chars)"
+    }
+    if ($overWarn.Count -gt 0) { Report-Warning "TASKS.md focus bullets over $warnBulletChars chars: $($overWarn -join ', '). Trim toward a one-line pointer." }
+    if ($doneHits.Count -gt 0) { Report-Warning "TASKS.md Current Focus has completed-work markers at $($doneHits -join ', '); move finished work to tasks/archive/YYYY-MM-done.md." }
+    if ($refHits.Count -gt 0) { Report-Warning "TASKS.md focus bullets inline many PR#/SHA/path refs at $($refHits -join ', '); link one session/archive note instead." }
+}
+
+# --- Banned journal sections (link detail, don't journal) ---
 $blockedHeadings = @("## Recent Notes", "## Recently Done")
 foreach ($heading in $blockedHeadings) {
     foreach ($file in @($state, $tasks)) {
-        if ((Get-Content -Raw -LiteralPath $file).Contains($heading)) {
-            Write-Error "$(Split-Path $file -Leaf) contains '$heading'; control files should link detail files, not journal history."
-            $failed = $true
+        if ((Test-Path $file) -and (Get-Content -Raw -LiteralPath $file).Contains($heading)) {
+            Report-Failure "$(Split-Path $file -Leaf) contains '$heading'; control files should link detail files, not journal history."
         }
     }
 }
